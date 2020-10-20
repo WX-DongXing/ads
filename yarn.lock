@@ -1613,6 +1613,11 @@ amdefine@>=0.0.4:
   resolved "https://registry.npm.taobao.org/amdefine/download/amdefine-1.0.1.tgz#4a5282ac164729e93619bcfd3ad151f817ce91f5"
   integrity sha1-SlKCrBZHKek2Gbz9OtFR+BfOkfU=
 
+animejs@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/animejs/-/animejs-3.2.1.tgz#de9fe2e792f44a777a7fdf6ae160e26604b0cdda"
+  integrity sha512-sWno3ugFryK5nhiDm/2BKeFCpZv7vzerWUcUPyAZLDhMek3+S/p418ldZJbJXo5ZUOpfm2kP2XRO4NJcULMy9A==
+
 ansi-colors@^3.0.0:
   version "3.2.4"
   resolved "https://registry.npm.taobao.org/ansi-colors/download/ansi-colors-3.2.4.tgz?cache=0&sync_timestamp=1594334943016&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fansi-colors%2Fdownload%2Fansi-colors-3.2.4.tgz#e3a3da4bfbae6c86a9c285625de124a234026fbf"
@@ -8033,6 +8038,11 @@ stackframe@^1.1.1:
   resolved "https://registry.npm.taobao.org/stackframe/download/stackframe-1.2.0.tgz#52429492d63c62eb989804c11552e3d22e779303"
   integrity sha1-UkKUktY8YuuYmATBFVLj0i53kwM=
 
+stateshot@^1.2.3:
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/stateshot/-/stateshot-1.3.3.tgz#d7cc0c69c50c24e7c20382ed22b1d3ec5bd6c717"
+  integrity sha512-BW6Jzhk0RDazSQMP41LkPeS7LGMIvWhRE/oKKvZRo+Gy5cOx8YGreLEojBHMhaK71ONemzxNLhSPS1a0Tvxolg==
+
 static-extend@^0.1.1:
   version "0.1.2"
   resolved "https://registry.npm.taobao.org/static-extend/download/static-extend-0.1.2.tgz#60809c39cbff55337226fd5e0b520f341f1fb5c6"
@@ -8864,6 +8874,13 @@ vue@^2.6.11:
   version "2.6.12"
   resolved "https://registry.npm.taobao.org/vue/download/vue-2.6.12.tgz?cache=0&sync_timestamp=1602778431621&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fvue%2Fdownload%2Fvue-2.6.12.tgz#f5ebd4fa6bd2869403e29a896aed4904456c9123"
   integrity sha1-9evU+mvShpQD4pqJau1JBEVskSM=
+
+vuex-stateshot@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/vuex-stateshot/-/vuex-stateshot-0.3.0.tgz#419dea69190aba249f8d1ff8689c884307aae48f"
+  integrity sha512-2TeIMW/YY0pjOrtOuUtpgmrDk7FI7xVHqMuJ9HCC7djWfCWYvpFGwlfJcEMoKnbz4uTx/Lcb1K6kqQePO3KlUw==
+  dependencies:
+    stateshot "^1.2.3"
 
 vuex@^3.4.0:
   version "3.5.1"

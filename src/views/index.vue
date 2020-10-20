@@ -2,13 +2,33 @@
   <div class="ads">
     <header>
       <p>ADS</p>
+      <div class="ads__mode">
+        <span
+          :class="[cursor === 'default' && 'ads__mode--active']"
+          @click="() => switchCursor('default')"
+        >
+          选择
+        </span>
+        <span
+          :class="[cursor === 'crosshair' && 'ads__mode--active']"
+          @click="() => switchCursor('crosshair')"
+        >
+          旋转
+        </span>
+        <span
+          :class="[cursor === 'pointer' && 'ads__mode--active']"
+          @click="() => switchCursor('pointer')"
+        >
+          移动
+        </span>
+      </div>
     </header>
     <splitpanes class="ads__main">
       <pane class="ads__aside" size="15"></pane>
       <pane class="ads__container">
         <splitpanes horizontal>
           <pane class="ads__scene">
-            <screen />
+            <screen ref="screen" />
           </pane>
           <pane min-size="25" size="25" class="ads__control">
           </pane>
@@ -19,6 +39,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import Screen from './Screen'
@@ -29,6 +50,14 @@ export default {
     Screen,
     Splitpanes,
     Pane
+  },
+  computed: {
+    ...mapState('screen', ['cursor'])
+  },
+  methods: {
+    switchCursor (mode) {
+      this.$refs.screen.handleCursor(mode)
+    }
   }
 }
 </script>
@@ -40,7 +69,7 @@ export default {
   header {
     display: flex;
     flex-flow: row nowrap;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     width: 100%;
     height: 48px;
@@ -53,6 +82,24 @@ export default {
       font-size: 16px;
       font-weight: bold;
       color: #ABABAB;
+    }
+  }
+
+  &__mode {
+    margin-left: 24px;
+
+    span {
+      cursor: pointer;
+      font-size: 12px;
+      color: rgba(136, 136, 136, 1);
+    }
+
+    span + span {
+      margin-left: 12px;
+    }
+
+    &--active {
+      color: rgba(255, 255, 255, 1) !important;
     }
   }
 
