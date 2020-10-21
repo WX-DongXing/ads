@@ -1,6 +1,10 @@
 <template>
   <div class="screen" ref="screen">
-    <div class="screen__view" ref="view">
+    <div class="screen__view view" ref="view">
+
+      <Widget width="1200" height="700" @select="(rect) => select$.next({ el: 'widget', events: rect })" />
+      <Widget width="1420" height="500" @select="(rect) => select$.next({ el: 'widget', events: rect })" />
+
     </div>
   </div>
 </template>
@@ -8,17 +12,25 @@
 <script>
 import key from 'keymaster'
 import anime from 'animejs'
-import { fromEvent } from 'rxjs'
-import { takeWhile } from 'rxjs/operators'
+import { fromEvent, Subject, merge, zip } from 'rxjs'
+import { takeWhile, map, filter } from 'rxjs/operators'
 import { mapState, mapMutations, createNamespacedHelpers } from 'vuex'
 import { ScreenMutationTypes } from '@/store/modules/screen'
+import Widget from '@/components/Widget'
+
 const stateshot = createNamespacedHelpers('vuexstateshot')
 
 export default {
   name: 'Screen',
+  // 选择器调整事件流
+  domStreams: ['select$', 'adjust$'],
+  components: {
+    Widget
+  },
   data () {
     return {
-      isSubjected: true
+      isSubjected: true,
+      select$: new Subject()
     }
   },
   computed: {
@@ -37,6 +49,31 @@ export default {
         this.setViewScale(scale)
         this.handleViewScale(scale)
       })
+
+    merge(
+      this.select$,
+      // 作为子元素的选择器事件取消冒泡，只有 mousedown 和 mouseup 时间逐次在 view 视图上触发时，才响应为一次事件
+      zip(
+        fromEvent(this.$refs.screen, 'mousedown', { capture: false }),
+        fromEvent(this.$refs.screen, 'mouseup', { capture: false })
+      ).pipe(
+        map(events => ({ el: 'screen', events })),
+        filter(({ events: [mousedownEvent] }) => [...mousedownEvent.target.classList].includes('screen'))
+      ),
+      zip(
+        fromEvent(this.$refs.view, 'mousedown', { capture: false }),
+        fromEvent(this.$refs.view, 'mouseup', { capture: false })
+      ).pipe(
+        map(events => ({ el: 'view', events })),
+        filter(({ events: [mousedownEvent] }) => [...mousedownEvent.target.classList].includes('view'))
+      )
+    )
+      .pipe(
+        takeWhile(() => this.isSubjected)
+      )
+      .subscribe(res => {
+        this.$emit('select', res)
+      })
   },
   methods: {
     ...mapMutations('screen', {
@@ -45,9 +82,9 @@ export default {
     }),
     ...stateshot.mapActions(['undo']),
     registerKeyMap () {
-      key('v', this.handleKeySelect)
+      key('q', this.handleKeySelect)
       key('w', this.handleKeyRotate)
-      key('H', this.handleKeyMove)
+      key('e', this.handleKeyMove)
       key('⌘+z, ctrl+z', this.handleUndo)
     },
     cancelKapMap () {
@@ -88,8 +125,7 @@ export default {
       this.setViewScale(scaleValue)
       anime({
         targets: this.$refs.view,
-        width: 1920 * scaleValue,
-        height: 1080 * scaleValue
+        scale: scaleValue
       })
     }
   },
@@ -118,6 +154,7 @@ export default {
     width: 1920px;
     height: 1080px;
     background: #ABABAB;
+    overflow: hidden;
   }
 }
 </style>

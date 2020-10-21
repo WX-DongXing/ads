@@ -28,7 +28,12 @@
       <pane class="ads__container">
         <splitpanes horizontal>
           <pane class="ads__scene">
-            <screen ref="screen" />
+
+            <screen ref="screen" @select="(data) => select$.next(data)" />
+
+            <Wrapper ref="wrapper" v-stream:adjust="adjust$" />
+            <!-- / 选择指示器 -->
+
           </pane>
           <pane min-size="25" size="25" class="ads__control">
           </pane>
@@ -39,25 +44,79 @@
 </template>
 
 <script>
+import { Subject } from 'rxjs'
+import { takeWhile } from 'rxjs/operators'
 import { mapState } from 'vuex'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import Screen from './Screen'
+import Wrapper from '@/components/Wrapper/index'
+import AdjustMixins from '@/components/Wrapper/AdjustMixins'
+import WrapperService from '@/components/Wrapper/WrapperService'
 
 export default {
   name: 'ADS',
   components: {
     Screen,
     Splitpanes,
-    Pane
+    Pane,
+    Wrapper
   },
+  mixins: [AdjustMixins],
+  domStreams: ['adjust$'],
   computed: {
-    ...mapState('screen', ['cursor'])
+    ...mapState('screen', ['cursor', 'viewScale'])
+  },
+  data () {
+    return {
+      isSubjected: true,
+      wrapperChange$: new WrapperService().change$,
+      select$: new Subject()
+    }
+  },
+  mounted () {
+    this.select$.asObservable()
+      .pipe(
+        takeWhile(() => this.isSubjected)
+      )
+      .subscribe(({ el, events }) => {
+        let styles
+        switch (el) {
+          case 'widget':
+            // eslint-disable-next-line no-case-declarations
+            const { width, height, top, left } = events
+            styles = {
+              display: 'block',
+              width,
+              height,
+              top,
+              left
+            }
+            break
+          case 'screen':
+          case 'view':
+            styles = {
+              display: 'none'
+            }
+            break
+          default:
+            break
+        }
+        // 设置选择器样式
+        styles && this.$refs.wrapper.setSize(styles)
+      })
+
+    this.adjust$
+      .pipe()
+      .subscribe(res => console.log(res))
   },
   methods: {
     switchCursor (mode) {
       this.$refs.screen.handleCursor(mode)
     }
+  },
+  beforeDestroy () {
+    this.isSubjected = false
   }
 }
 </script>
