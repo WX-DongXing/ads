@@ -1,54 +1,74 @@
 <template>
   <div class="screen" ref="screen">
-    <div class="screen__view view" ref="view">
 
-      <Widget width="1200" height="700" @select="(rect) => select$.next({ el: 'widget', events: rect })" />
-      <Widget width="1420" height="500" @select="(rect) => select$.next({ el: 'widget', events: rect })" />
+      <div class="screen__view view" ref="view">
+        <widget
+          v-for="widget in widgets"
+          :key="widget.id"
+          :widget="widget"
+          :ref="widget.widgetId"
+          @select="(rect) => select$.next({ el: 'widget', events: rect, widget })"
+        />
+      </div>
 
-    </div>
+      <Wrapper ref="wrapper" v-stream:adjust="adjust$" />
+      <!-- / 选择指示器 -->
   </div>
 </template>
 
 <script>
+import _ from 'lodash'
 import key from 'keymaster'
 import anime from 'animejs'
 import { fromEvent, Subject, merge, zip } from 'rxjs'
-import { takeWhile, map, filter } from 'rxjs/operators'
+import { takeWhile, map, filter, startWith, pluck } from 'rxjs/operators'
 import { mapState, mapMutations, createNamespacedHelpers } from 'vuex'
 import { ScreenMutationTypes } from '@/store/modules/screen'
 import Widget from '@/components/Widget'
+import Wrapper from '@/components/Wrapper/index'
+import AdjustMixins from '@/components/Wrapper/AdjustMixins'
+import WrapperService from '@/components/Wrapper/WrapperService'
 
 const stateshot = createNamespacedHelpers('vuexstateshot')
 
 export default {
   name: 'Screen',
+  mixins: [AdjustMixins],
   // 选择器调整事件流
   domStreams: ['select$', 'adjust$'],
   components: {
-    Widget
+    Widget,
+    Wrapper
   },
   data () {
     return {
-      isSubjected: true,
-      select$: new Subject()
+      isSubscribed: true,
+      select$: new Subject(),
+      wrapperChange$: new WrapperService().change$
     }
   },
   computed: {
-    ...mapState('screen', ['viewScale'])
+    ...mapState('screen', ['viewScale', 'widgets', 'activeWidget'])
   },
   mounted () {
     this.registerKeyMap()
-    this.handleViewScale()
 
     fromEvent(this.$refs.screen, 'wheel')
       .pipe(
-        takeWhile(() => this.isSubjected)
+        takeWhile(() => this.isSubscribed),
+        startWith('')
       )
       .subscribe(event => {
         const scale = this.viewScale + event.deltaY * 0.0001
+        this.setView(this.$refs.view.getBoundingClientRect())
         this.setViewScale(scale)
         this.handleViewScale(scale)
       })
+
+    // 重新计算视图位置对象
+    setTimeout(() => {
+      this.setView(this.$refs.view.getBoundingClientRect())
+    }, 1000)
 
     merge(
       this.select$,
@@ -69,16 +89,82 @@ export default {
       )
     )
       .pipe(
-        takeWhile(() => this.isSubjected)
+        takeWhile(() => this.isSubscribed)
       )
-      .subscribe(res => {
-        this.$emit('select', res)
+      .subscribe(({ el, events, widget }) => {
+        let styles
+        let activeWidget
+        switch (el) {
+          case 'widget':
+            const { top: screenTop, left: screenLeft } = this.$refs.screen.getBoundingClientRect()
+            const { width, height, top, left } = events
+            activeWidget = { ...widget, width, height }
+            styles = {
+              display: 'block',
+              width,
+              height,
+              top: top - screenTop,
+              left: left - screenLeft
+            }
+            break
+          case 'screen':
+          case 'view':
+            styles = {
+              display: 'none'
+            }
+            break
+          default:
+            activeWidget = null
+            break
+        }
+        if (el !== 'adjust') {
+          // 设置激活的部件
+          this.setActiveWidget(activeWidget)
+          // 设置选择器样式
+          styles && this.$refs.wrapper.setSize(styles)
+        }
+      })
+
+    // 部件尺寸调整
+    this.adjust$
+      .pipe(
+        takeWhile(() => this.isSubscribed),
+        pluck('event', 'msg')
+      )
+      .subscribe((mutation) => {
+        const { widgetId } = this.activeWidget
+        const [targetComponent] = this.$refs[widgetId]
+        const { event: { mouseType } } = mutation
+        // 当鼠标抬起时更新部件位置状态
+        if (mouseType === 'mouseup') {
+          const {
+            top, left, width, height
+          } = window.getComputedStyle(targetComponent.$el, null)
+          const widgetPositionState = {
+            top: (Number(top.split('px')[0]) || 0) / this.viewScale,
+            left: (Number(left.split('px')[0]) || 0) / this.viewScale,
+            width: Number(width.split('px')[0]) || 0,
+            height: Number(height.split('px')[0]) || 0
+          }
+          // 更新部件位置信息
+          const widget = _.cloneDeep(this.activeWidget)
+          Object.assign(widget, widgetPositionState)
+          this.setActiveWidget(widget)
+          return
+        }
+        // 调整部件大小
+        this.adjust({
+          target: targetComponent.$el,
+          mutation
+        })
       })
   },
   methods: {
     ...mapMutations('screen', {
+      setView: ScreenMutationTypes.SET_VIEW,
       setViewScale: ScreenMutationTypes.SET_VIEW_SCALE,
-      setCursor: ScreenMutationTypes.SET_CURSOR
+      setCursor: ScreenMutationTypes.SET_CURSOR,
+      setActiveWidget: ScreenMutationTypes.SET_ACTIVE_WIDGET
     }),
     ...stateshot.mapActions(['undo']),
     registerKeyMap () {
@@ -130,7 +216,7 @@ export default {
     }
   },
   beforeDestroy () {
-    this.isSubjected = false
+    this.isSubscribed = false
     this.cancelKapMap()
   }
 }
